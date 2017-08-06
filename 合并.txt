@@ -1,0 +1,408 @@
+package com.cacheserverdeploy.deploy;
+import java.util.ArrayList;
+
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Scanner;
+
+
+public class Deploy 
+{
+  
+	
+	public static   int totalPoint;
+	public static   int totalLine;
+	public static   int totalServicePoint;
+	public static   int spend;
+	public static   int step=0;
+	public static   List<Line> line = new ArrayList<Line>();
+	public static   String[] outStrings = new String[9999];
+	public static   List<List<Integer>> route = new ArrayList<List<Integer>>();
+	public static   List<Integer> sl = new ArrayList<Integer>();//存放当前的服务器位置
+    public static String[] deployServer(String[] graphContent)
+    {
+    	
+        /**do your work here**/	
+    	getDate(graphContent);//字符串数组转成int,保存在List<Line>
+
+       
+
+		long current = System.currentTimeMillis();
+	
+//		System.out.print(current);
+		//设置每个服务器安装在消费节点为初始解
+	
+		int result = 99999999;
+		int temp = Calculate(result, sl);
+		if (temp<result)
+			result = temp;
+		System.out.print(result);
+		outStrings = getOut(route,sl);
+		return outStrings;
+	}
+	/*
+	 * 获得输入String[]中的数据，放在List<Line>内
+	 */
+	public static void getDate(String[] graphContent) {
+		line.clear();
+		StringBuffer sb = new StringBuffer();
+    	for(int i = 0; i <graphContent.length; i++){
+    	 sb. append(" "+graphContent[i]);
+    	}
+       	String s = sb.toString();
+       	Scanner sc =  new Scanner(s);
+       	totalPoint = sc.nextInt();
+		totalLine = sc.nextInt();
+		totalServicePoint = sc.nextInt();
+		spend = sc.nextInt();
+		
+		for (int i =0;i<totalLine;i++){
+			int tempInt1 = sc.nextInt();
+			int tempInt2 = sc.nextInt();
+			int tempInt3 = sc.nextInt();
+			int tempint4 = sc.nextInt();
+			Line e1 = new Line(tempInt1,tempInt2, tempInt3, tempint4,tempInt3);
+			line.add(e1); 
+//			Line e2 = new Line(tempInt2,tempInt1, tempInt3, tempint4,tempInt3);
+//			line.add(e2); 
+		}
+		for (int i =0;i<totalServicePoint;i++){
+			int temp=sc.nextInt();
+			int temp2=sc.nextInt();
+			int temp3=sc.nextInt();
+			Line e =new Line(temp2, temp+totalPoint, temp3,0,temp3);
+			line.add(e);
+			
+		}
+//		for (int i = line.size() - 1; i > line.size() - totalServicePoint; i--) {
+//			for (int j = i - 1; j >= line.size() - totalServicePoint; j--) {
+//				if (line.get(i).broad < line.get(j).broad) {
+//					Line e = new Line(line.get(j).start, line.get(j).end,
+//							line.get(j).broad, line.get(j).cost,
+//							line.get(j).broadReserve);
+//					Line e1 = line.set(i, e);
+//					line.set(j, e1);
+//				}
+//			}
+//		}
+	}
+
+	public static int Calculate(int result,List<Integer> sl){
+		for (int i =line.size();i>line.size()-totalServicePoint;i--){
+			List<Integer> e = new ArrayList<Integer>();
+			e.add(line.get(i-1).start);
+			e.add(line.get(i-1).end-totalPoint);
+			e.add(line.get(i-1).broad);
+			e.add(line.get(i-1).broad);
+			route.add(e);
+		}
+	
+		for (int i =0;i<line.size()-totalServicePoint;i=i+1){
+			sl.clear();
+			for (int c =0;c<route.size();c++){
+				sl.add(route.get(c).get(0)); 
+			}
+			int flagstart = sl.indexOf(line.get(i).start);
+			int flagend = sl.indexOf(line.get(i).end);
+			int cost1=9999;
+			int cost2=9999;
+			int cost;
+			if ((flagstart!=-1) && (flagend!=-1) ){
+				if (route.get(flagstart).get(0)==line.get(i).start)
+					if (line.get(i).broadReserve>=route.get(flagstart).get(route.get(flagstart).size()-1))
+						cost1= route.get(flagstart).get(route.get(flagstart).size()-1)*line.get(i).cost;
+				if (route.get(flagend).get(0)==line.get(i).end)
+					if (line.get(i).broadReserve>=route.get(flagend).get(route.get(flagend).size()-1))
+						cost2= route.get(flagend).get(route.get(flagend).size()-1)*line.get(i).cost;
+				}
+//				System.out.println(cost2);
+//				System.out.println(cost1);
+				cost = cost1>=cost2?cost2:cost1;
+				if (cost<spend){
+					if (cost==cost1 &&cost1!=9999){
+						route.get(flagstart).add(0,line.get(i).end);
+						
+						sl.remove(flagstart);
+						if (route.get(flagstart).get(route.get(flagstart).size()-1) >route.get(flagstart).get(route.get(flagstart).size()-2) ){
+							for (int q=0;q<route.size();q++){
+								if (route.get(q).get(0)==route.get(flagstart).get(1) && q!=flagstart){
+									route.get(q).add(0,line.get(i).end);
+								}
+							}
+						}
+						int cc = route.get(flagstart).get(route.get(flagstart).size()-1);
+						int dd = route.get(flagend).get(route.get(flagend).size()-1);
+						if (flagend<flagstart)
+							route.get(flagend).set(route.get(flagend).size()-1, cc+dd);
+						else 
+							route.get(flagstart).set(route.get(flagstart).size()-1, cc+dd);
+						line.remove(i);
+						i--;
+					}
+					else if (cost==cost2 &&cost2!=9999){
+						route.get(flagend).add(0,line.get(i).start);
+						
+						sl.remove(flagend);
+						if (route.get(flagend).get(route.get(flagend).size()-1) >route.get(flagend).get(route.get(flagend).size()-2) ){
+							for (int q=0;q<route.size();q++){
+								if (route.get(q).get(0)==route.get(flagend).get(1) && q!=flagend){
+									route.get(q).add(0,line.get(i).start);
+									
+								}
+							}
+						}
+						int cc = route.get(flagstart).get(route.get(flagstart).size()-1);
+						int dd = route.get(flagend).get(route.get(flagend).size()-1);
+						if (flagend<flagstart)
+							route.get(flagend).set(route.get(flagend).size()-1, cc+dd);
+						else 
+							route.get(flagstart).set(route.get(flagstart).size()-1, cc+dd);
+						line.remove(i);
+						i--;
+					}
+				}
+		}
+	
+//		for (int i =0;i<line.size()-1-totalServicePoint;i=i+1){
+//			
+//			int cost;
+//			int flagstart2;
+//			int flagend2;
+//			int cost1start = 0;
+//			int cost1end  = 0;
+//			int cost2start = 0;
+//			int cost2end=0;
+//			int cost3start=0;
+//			int cost3end=0;
+//			int cost4start=0;
+//			int cost4end=0;
+//			int flagstart = sl.indexOf(line.get(i).start);
+//			int flagend = sl.indexOf(line.get(i).end);
+//			
+//			for (int j=i+1;j<line.size()-totalServicePoint;j++){
+//				int cost1=9999;
+//				int cost2=9999;
+//				int cost3=9999;
+//				int cost4=9999;
+//				if (flagstart!=-1){
+//				
+//					flagstart2 = sl.indexOf(line.get(j).start);
+//				    flagend2 = sl.indexOf(line.get(j).end);
+//					if (flagstart2!=-1 && line.get(i).end==line.get(j).end){
+//						if (route.get(flagstart2).get(route.get(flagstart2).size()-1)<=line.get(j).broadReserve &&   
+//								route.get(flagstart).get(route.get(flagstart).size()-1)<=line.get(i).broadReserve){
+//						cost1=route.get(flagstart2).get(route.get(flagstart2).size()-1)*line.get(j).cost+
+//						     route.get(flagstart).get(route.get(flagstart).size()-1)*line.get(i).cost;
+//						System.out.println("ss");
+//						cost1start=flagstart2;
+//						cost1end=flagend2;
+//						}
+//						}
+//					else if (flagend2!=-1 && line.get(i).end==line.get(j).start){
+//						if (route.get(flagend2).get(route.get(flagend2).size()-1)<=line.get(j).broadReserve &&   
+//								route.get(flagstart).get(route.get(flagstart).size()-1)<=line.get(i).broadReserve){
+//						cost2=route.get(flagend2).get(route.get(flagend2).size()-1)*line.get(j).cost+
+//							  route.get(flagstart).get(route.get(flagstart).size()-1)*line.get(i).cost;
+//						System.out.println("sss");
+//						cost2start=flagstart2;
+//						cost2end=flagend2;
+//						}
+//					}
+//					
+//				}
+//				else if (flagend!=-1){
+//					flagstart2 = sl.indexOf(line.get(j).start);
+//			     	 flagend2 = sl.indexOf(line.get(j).end);
+//					if (flagstart2!=-1 && line.get(i).start==line.get(j).end){
+//						if (route.get(flagstart2).get(route.get(flagstart2).size()-1)<=line.get(j).broadReserve &&   
+//							route.get(flagend).get(route.get(flagend).size()-1)<=line.get(i).broadReserve){
+//							cost3=route.get(flagstart2).get(route.get(flagstart2).size()-1)*line.get(j).cost+
+//								route.get(flagend).get(route.get(flagend).size()-1)*line.get(i).cost;
+//							System.out.println("ssss");
+//							cost3start=flagstart2;
+//							cost3end=flagend2;
+//						}
+//					}
+//					else	if (flagend2!=-1 && line.get(i).start==line.get(j).start){
+//						if (route.get(flagend2).get(route.get(flagend2).size()-1)<=line.get(j).broadReserve &&   
+//							route.get(flagend).get(route.get(flagend).size()-1)<=line.get(i).broadReserve){
+//							cost4=Math.min(cost4,route.get(flagend2).get(route.get(flagend2).size()-1)*line.get(j).cost+
+//								route.get(flagend).get(route.get(flagend).size()-1)*line.get(i).cost);
+//							System.out.println("sssss");
+//							System.out.println(line.get(i).start);
+//							cost4start=flagstart2;
+//							cost4end=flagend2;
+//							}
+//					}
+//				
+//			
+//				}
+//			
+//		
+//			cost = Math.min(cost1, cost2);
+//			cost = Math.min(cost, cost3);
+//			cost = Math.min(cost, cost4);
+//			if (cost<spend){
+//				if (cost==cost1 &&cost1!=9999){
+//					System.out.println("1执行");
+//					route.get(flagstart).add(0,line.get(i).end);
+//					if (route.get(flagstart).get(route.get(flagstart).size()-1) >route.get(flagstart).get(route.get(flagstart).size()-2) ){
+//						for (int q=0;q<route.size();q++){
+//							if (route.get(q).get(0)==route.get(flagstart).get(1) && q!=flagstart){
+//								route.get(q).add(0,line.get(i).end);
+//								
+//							}
+//						}
+//					}
+//					route.get(cost1start).add(0,line.get(i).end);
+//					if (route.get(cost1start).get(route.get(cost1start).size()-1) >route.get(cost1start).get(route.get(cost1start).size()-2) ){
+//						for (int q=0;q<route.size();q++){
+//							if (route.get(q).get(0)==route.get(cost1start).get(1) && q!=cost1start){
+//								route.get(q).add(0,line.get(i).end);
+//								
+//							}
+//						}
+//					}
+//					line.remove(i);
+//					i--;
+//					line.remove(j);
+//					j--;
+//					break;
+//				}
+//				else if (cost==cost2 &&cost2!=9999){
+//					System.out.println("2执行");
+//					route.get(flagstart).add(0,line.get(i).end);
+//					if (route.get(flagstart).get(route.get(flagstart).size()-1) >route.get(flagstart).get(route.get(flagstart).size()-2) ){
+//						for (int q=0;q<route.size();q++){
+//							if (route.get(q).get(0)==route.get(flagstart).get(1) && q!=flagstart){
+//								route.get(q).add(0,line.get(i).end);
+//								
+//							}
+//						}
+//					}
+//					route.get(cost2end).add(0,line.get(i).end);
+//					if (route.get(cost2end).get(route.get(cost2end).size()-1) >route.get(cost2end).get(route.get(cost2end).size()-2) ){
+//						for (int q=0;q<route.size();q++){
+//							if (route.get(q).get(0)==route.get(cost2end).get(1) && q!=cost2end){
+//								route.get(q).add(0,line.get(i).end);
+//								
+//							}
+//						}
+//					}
+//					line.remove(i);
+//					i--;
+//					line.remove(j);
+//					j--;
+//					break;
+//				}
+//				else if (cost==cost3 &&cost3!=9999){
+//					System.out.println("3执行");
+//					route.get(flagend).add(0,line.get(i).start);
+//					if (route.get(flagend).get(route.get(flagend).size()-1) >route.get(flagend).get(route.get(flagend).size()-2) ){
+//						for (int q=0;q<route.size();q++){
+//							if (route.get(q).get(0)==route.get(flagend).get(1) && q!=flagend){
+//								route.get(q).add(0,line.get(i).start);
+//								
+//							}
+//						}
+//					}
+//					route.get(cost3start).add(0,line.get(i).start);
+//					if (route.get(cost3start).get(route.get(cost3start).size()-1) >route.get(cost3start).get(route.get(cost3end).size()-2) ){
+//						for (int q=0;q<route.size();q++){
+//							if (route.get(q).get(0)==route.get(cost3start).get(1) && q!=cost3start){
+//								route.get(q).add(0,line.get(i).start);
+//								
+//							}
+//						}
+//					}
+//					line.remove(i);
+//					i--;
+//					line.remove(j);
+//					j--;
+//					break;
+//				}
+//				else if (cost==cost4 &&cost4!=9999){
+//					System.out.println("4执行");
+//					route.get(flagend).add(0,line.get(i).start);
+//					if (route.get(flagend).get(route.get(flagend).size()-1) >route.get(flagend).get(route.get(flagend).size()-2) ){
+//						for (int q=0;q<route.size();q++){
+//							if (route.get(q).get(0)==route.get(flagend).get(1) && q!=flagend){
+//								route.get(q).add(0,line.get(i).start);
+//								
+//							}
+//						}
+//					}
+//					route.get(cost4end).add(0,line.get(i).start);
+//					if (route.get(cost4end).get(route.get(cost4end).size()-1) >route.get(cost4end).get(route.get(cost4end).size()-2) ){
+//						for (int q=0;q<route.size();q++){
+//							if (route.get(q).get(0)==route.get(cost4end).get(1) && q!=cost4end){
+//								route.get(q).add(0,line.get(i).start);
+//								
+//							}
+//						}
+//					}
+//					line.remove(i);
+//					i--;
+//					line.remove(j);
+//					j--;
+//					break;
+//				}
+//			}
+//			}
+//			
+//			
+//		}
+//		
+//	    
+		int result2 = sl.size()*spend;
+		return result2;
+	}
+	public static String[] getOut(List<List<Integer>> route ,List<Integer> sl){
+		for (int k=0;k<route.size();k++){
+			System.out.println();
+			StringBuilder sb = new StringBuilder();
+			sb.setLength(0);
+			for (int h=0;h<route.get(k).size()-1;h++){
+				System.out.print(route.get(k).get(h)+" ");
+				sb.append(String.valueOf(route.get(k).get(h)));
+				sb.append(" ");
+				outStrings[k+2]=sb.toString();
+			}
+			
+		}
+		outStrings[0]=String.valueOf(route.size());
+		outStrings[1]="\r\n";
+		return outStrings;
+	}
+}
+class Line{
+    int start;
+	int end;
+	int broad;
+	int cost;
+	int broadReserve;
+	public Line(int start, int end, int broad, int cost,int broadreserve) {
+		
+		this.start = start;
+		this.end = end;
+		this.broad = broad;
+		this.cost = cost;
+		this.broadReserve=broadreserve;
+	}
+}
+class Util{
+	public static int isOfSl(List<Integer> sl,int test){
+		for (int i =0;i<sl.size();i++){
+			if (test==sl.get(i)){
+				return i ;
+			}
+		}
+		return -1;
+	}
+	public static boolean isZero(int[][] arr,int n){
+		for (int i =1;i<=n;i++){
+			if (arr[i][0]!=0) return false;
+		}
+		return true;
+	}
+}
